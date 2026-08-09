@@ -5,7 +5,14 @@ from pydantic import BaseModel
 class RaiseUpdateRequest(BaseModel):
     version: str
     features: list[str]
-    
+class RaiseUpdateRequest(BaseModel):
+    version: str
+    features: list[str]
+
+
+class RequestCountRequest(BaseModel):
+    user_id: str
+    count: int
 app = FastAPI(title="Nemo Control Server")
 
 app.add_middleware(
@@ -98,6 +105,84 @@ def get_update(version: str):
         return {
             "status": "success",
             "data": response.data
+        }
+
+    except Exception as e:
+
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+@app.post("/sync-request-count")
+def sync_request_count(request: RequestCountRequest):
+
+    try:
+
+        from datetime import date
+
+        today = date.today().isoformat()
+
+        # --------------------------------------------------------
+        # CHECK TODAY'S EXISTING ROW
+        # --------------------------------------------------------
+
+        response = (
+            supabase
+            .table("daily_request_counts")
+            .select("*")
+            .eq("user_id", request.user_id)
+            .eq("date", today)
+            .execute()
+        )
+
+        existing_rows = response.data or []
+
+        # --------------------------------------------------------
+        # UPDATE EXISTING ROW
+        # --------------------------------------------------------
+
+        if len(existing_rows) > 0:
+
+            existing_data = existing_rows[0]
+
+            new_count = (
+                existing_data["total_requests"]
+                + request.count
+            )
+
+            (
+                supabase
+                .table("daily_request_counts")
+                .update({
+                    "total_requests": new_count
+                })
+                .eq("user_id", request.user_id)
+                .eq("date", today)
+                .execute()
+            )
+
+            return {
+                "status": "success",
+                "message": "Request count updated.",
+                "total_requests": new_count
+            }
+
+        # --------------------------------------------------------
+        # CREATE NEW ROW
+        # --------------------------------------------------------
+
+        supabase.table(
+            "daily_request_counts"
+        ).insert({
+            "user_id": request.user_id,
+            "total_requests": request.count,
+            "date": today
+        }).execute()
+
+        return {
+            "status": "success",
+            "message": "Request count created.",
+            "total_requests": request.count
         }
 
     except Exception as e:
