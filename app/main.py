@@ -191,3 +191,37 @@ def sync_request_count(request: RequestCountRequest):
             "status": "error",
             "message": str(e)
         }
+@app.get("/get_neemo_user_name/{user_id}")
+def get_neemo_user_name(user_id: str):
+
+    try:
+
+        response = (
+            supabase
+            .table("neemo_user_info")
+            .select("user_name, actual_name")
+            .eq("user_id", user_id.upper())
+            .single()
+            .execute()
+        )
+
+        if not response.data:
+            return {
+                "status": "error",
+                "message": "User not found."
+            }
+
+        return {
+            "status": "success",
+            "data": {
+                "user_name": response.data["user_name"],
+                "actual_name": response.data["actual_name"]
+            }
+        }
+
+    except Exception as e:
+
+        return {
+            "status": "error",
+            "message": str(e)
+        }
