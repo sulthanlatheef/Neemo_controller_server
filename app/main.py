@@ -225,3 +225,61 @@ def get_neemo_user_name(user_id: str):
             "status": "error",
             "message": str(e)
         }
+@app.get("/get-daily-request-count/{user_id}")
+def get_daily_request_count(user_id: str):
+
+    try:
+
+        from datetime import date
+
+        # --------------------------------------------------------
+        # GET TODAY'S DATE
+        # --------------------------------------------------------
+
+        today = date.today().isoformat()
+
+        # --------------------------------------------------------
+        # GET TODAY'S REQUEST COUNT FOR USER
+        # --------------------------------------------------------
+
+        response = (
+            supabase
+            .table("daily_request_counts")
+            .select("total_requests")
+            .eq("user_id", user_id.upper())
+            .eq("date", today)
+            .execute()
+        )
+
+        rows = response.data or []
+
+        # --------------------------------------------------------
+        # NO ROW FOUND
+        # --------------------------------------------------------
+
+        if not rows:
+
+            return {
+                "status": "success",
+                "data": {
+                    "requests": 0
+                }
+            }
+
+        # --------------------------------------------------------
+        # ROW FOUND
+        # --------------------------------------------------------
+
+        return {
+            "status": "success",
+            "data": {
+                "requests": rows[0]["total_requests"]
+            }
+        }
+
+    except Exception as e:
+
+        return {
+            "status": "error",
+            "message": str(e)
+        }
