@@ -8,7 +8,10 @@ class RaiseUpdateRequest(BaseModel):
 class RaiseUpdateRequest(BaseModel):
     version: str
     features: list[str]
-
+class NeemoBugRequest(BaseModel):
+    user_id: str
+    title: str
+    description: str
 
 class RequestCountRequest(BaseModel):
     user_id: str
@@ -275,6 +278,67 @@ def get_daily_request_count(user_id: str):
             "data": {
                 "requests": rows[0]["total_requests"]
             }
+        }
+
+    except Exception as e:
+
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+@app.post("/raise-neemo-bug")
+def raise_neemo_bug(request: NeemoBugRequest):
+
+    try:
+
+        # --------------------------------------------------------
+        # VALIDATE INPUT
+        # --------------------------------------------------------
+
+        user_id = request.user_id.strip().upper()
+        title = request.title.strip()
+        description = request.description.strip()
+
+        if not user_id:
+            return {
+                "status": "error",
+                "message": "User ID is required."
+            }
+
+        if not title:
+            return {
+                "status": "error",
+                "message": "Bug title is required."
+            }
+
+        if not description:
+            return {
+                "status": "error",
+                "message": "Bug description is required."
+            }
+
+        # --------------------------------------------------------
+        # INSERT BUG
+        # --------------------------------------------------------
+
+        response = (
+            supabase
+            .table("Neemo_bugs")
+            .insert({
+                "user_id": user_id,
+                "title": title,
+                "description": description
+            })
+            .execute()
+        )
+
+        # --------------------------------------------------------
+        # RETURN SUCCESS
+        # --------------------------------------------------------
+
+        return {
+            "status": "success",
+            "message": "Bug reported successfully."
         }
 
     except Exception as e:
